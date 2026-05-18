@@ -1,1 +1,97 @@
 \section{Task 3 (by Jan)}
+
+\subsection{Preceding tasks}
+
+For the preceding tasks i firstly imported the required libraries to run the program. When and why the libraries are used will be explained later:
+
+\begin{verbatim}
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+import numpy as np
+\end{verbatim}
+After that i read the csv file in a compatible format. I choose pandas dataframes as it is easy to use and i am already used to it form the other courses. I read the csv via:
+
+\begin{verbatim}
+df = pd.read_csv("../Wine_Test_01.csv")
+\end{verbatim}
+and then print the dataset to have a look at it:
+
+\begin{figure}[H]
+\centerline{\includegraphics[width=\textwidth]{Images/1779112013.png}}
+\caption{Wine test dataset in Pandas}
+\label{fig:dataset}
+\end{figure}
+
+\subsection{Task a)}
+
+\subsubsection{Scale dataset}
+
+Before performing PCA the dataset needs to be scaled as with all machine learning tasks. In this case i use the StandardScaler from sklearn preprocessing as it is normally used for such tasks:
+
+\begin{verbatim}
+scaler = StandardScaler()
+y = df["quality"]
+X = df.drop(columns=["quality"])
+X = scaler.fit_transform(df)
+X
+\end{verbatim}
+
+\subsubsection{Perform PCA on all attributes and get cumulative variance}
+
+Next i perform PCA on all attributes as stated in the task description. For that i use the PCA library from sklearn decomposition. With this library to perform a PCA on all attributes you just don't provide the \verb|n_components| variable:
+
+\begin{verbatim}
+pca = PCA()
+pca.fit(X)
+\end{verbatim}
+After that i get the \verb|explained_variance_ration_| and calculate the cumulative variance via \verb|np.cumsum| from it:
+
+\begin{verbatim}
+cum_cov = np.cumsum(cov)
+\end{verbatim}
+This results in following array with the cumulative variances:
+\begin{verbatim}
+array([0.26347428, 0.44561281, 0.58392261, 0.68498203, 0.76667449,
+    0.82351255, 0.87537205, 0.91853493, 0.9534041 , 0.98054548,
+    0.99512954, 1.        ])
+\end{verbatim}
+
+\subsubsection{Plot results}
+
+Lastly as asked in the task description i print the result like we did in class. For this i use matplotlib and following config:
+
+\begin{verbatim}
+plt.plot(cum_cov)
+plt.xlabel("Number of components")
+plt.ylabel("Cumulative variance")
+plt.show()
+\end{verbatim}
+which leads to following output:
+
+\begin{figure}[H]
+\centerline{\includegraphics[width=\textwidth]{Images/Task3_plot.png}}
+\caption{"Number of components" vs "Cumulative variance" plot result}
+\label{fig:var_plot}
+\end{figure}
+This plot corresponds with the plot we did in class.
+
+\subsubsection{Choose principal components}
+
+Lastly we should decide with how many principal components we should proceed. As the cumulative variance should be over 90\% i wrote i small loop to dynamically choose the principal components:
+
+\begin{verbatim}
+for index, value in enumerate(cum_cov):
+    if value >= 0.9:
+        p_c = index + 1
+        break
+\end{verbatim}
+The result was that in on this dataset we should use \textbf{8 principal componenets}. After that i used the \verb|p_c| variable to generate a new reduced dataset via PCA for Task 3 b):
+
+\begin{verbatim}
+pca = PCA(n_components=p_c)
+X_PCA = pca.fit_transform(X)
+\end{verbatim}
+
+\subsection{Task b)}
