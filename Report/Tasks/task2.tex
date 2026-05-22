@@ -1,1 +1,156 @@
-\section{Task 2 (by Maria)}
+\section{Task 2: Classification after Record Deletion (by Maria)}
+
+\subsection{Overview}
+In Task 1 we observed that most attributes show strong overlap of the
+$Y = 0$ and $Y = 1$ distributions, which limits the SVM baseline
+accuracy to $0.7576 \pm 0.0277$. Task 2 investigates the effect of
+\emph{record deletion}: rows whose chosen attribute falls in a central
+overlap corridor are removed from the dataset, artificially creating
+a clearer class separation. The same 10-run GridSearch SVM pipeline as
+in Task 1c is then re-applied to the cleaned data, and the resulting
+accuracy is compared with the Task 1 baseline.
+
+\subsection{Task 2a: Attribute Choice for Density Analysis}
+Two attributes are chosen for the 2-dimensional density (scatter)
+analysis: \textbf{alcohol} (X axis) and \textbf{pH} (Y axis).
+
+The choice follows the spirit of Fig.~2 in the assignment, which pairs
+a \emph{separating} attribute with an \emph{overlapping} one:
+\begin{itemize}
+    \item \textbf{Alcohol} was identified in Task 1b as the strongest
+    discriminator: bad wines concentrate around 9--10\%, good wines
+    extend up to 12--13\%.
+    \item \textbf{pH} was identified as one of the least informative
+    attributes, with nearly complete overlap between classes.
+\end{itemize}
+This pairing makes it possible to delete a corridor along the alcohol
+axis to enforce visible class separation, while pH provides
+contextual spread in the orthogonal direction.
+
+\subsection{Task 2b: Density Analysis and Record Deletion}
+Figure~\ref{fig:scatter_before} shows the scatter plot before any
+deletion. The two classes are intermixed in the central region
+$\text{alcohol} \in [10.0, 10.7]$, while a slight class trend is
+visible: $Y = 0$ tends to dominate below 10\% alcohol and $Y = 1$
+above 10.7\%.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.7\linewidth]{figures/task2_scatter_before.png}
+    \caption{Task 2a: Scatter plot of alcohol vs.\ pH before deletion.
+    Blue: $Y = 0$ (bad); orange: $Y = 1$ (good).}
+    \label{fig:scatter_before}
+\end{figure}
+
+\paragraph{Deletion rule.}
+All records whose alcohol value falls in the central corridor
+$[10.0, 10.7]$ are removed, irrespective of class. This is the
+\emph{symmetric corridor} approach described in the lecture
+(slides 7--11): records are deleted in a value range where the two
+class histograms overlap, so that the remaining histograms become
+separated.
+
+\paragraph{Effect of the deletion.}
+The original dataset contains 1143 rows (522 bad / 621 good). After
+removing the corridor, 889 rows remain (415 bad / 474 good): 254 rows
+(22.2\%) are deleted, and the class balance is preserved. Figure
+\ref{fig:scatter_before_after} compares the scatter plots before and
+after the deletion. After cleaning, a visible vertical gap appears in
+the alcohol axis, and the two class clouds are noticeably more
+separated.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{figures/task2_scatter_before_after.png}
+    \caption{Task 2b: Effect of the symmetric corridor deletion on
+    alcohol. Left: original dataset with the deleted corridor shown in
+    red. Right: cleaned dataset, with a visible gap between the two
+    class clouds.}
+    \label{fig:scatter_before_after}
+\end{figure}
+
+\subsection{Task 2c: Ten Runs of Modelling and Testing on the Cleaned Data}
+
+\paragraph{Pipeline.}
+The pipeline, hyperparameter grid and number of runs are deliberately
+\emph{identical} to Task 1c: \texttt{StandardScaler} followed by
+\texttt{SVC}, the same set of 50 hyperparameter combinations searched
+by \texttt{GridSearchCV} with 5-fold cross-validation, 10 outer runs
+with stratified 80/20 splits. The only difference between Task 1c and
+Task 2c is the input data, so any change in accuracy can be attributed
+to the record deletion alone.
+
+\paragraph{Results.}
+Table~\ref{tab:task2c} lists the test accuracy and best hyperparameters
+of each run on the cleaned dataset.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Run} & \textbf{Accuracy} & \textbf{Kernel} & \textbf{C} & \textbf{gamma} \\
+\hline
+ 1 & 0.7528 & rbf    & 1000  & 0.01  \\ \hline
+ 2 & 0.7416 & rbf    & 1     & 0.1   \\ \hline
+ 3 & 0.7865 & rbf    & 1     & 0.1   \\ \hline
+ 4 & 0.7865 & rbf    & 1000  & 0.01  \\ \hline
+ 5 & 0.7809 & rbf    & 100   & 0.01  \\ \hline
+ 6 & 0.7640 & linear & 0.1   & 1     \\ \hline
+ 7 & 0.7809 & rbf    & 1     & 0.1   \\ \hline
+ 8 & 0.7528 & rbf    & 100   & 0.01  \\ \hline
+ 9 & 0.7640 & rbf    & 100   & 0.001 \\ \hline
+10 & 0.8034 & rbf    & 10    & 0.01  \\ \hline
+\end{tabular}
+\caption{Task 2c: Test accuracy and best hyperparameters for each of
+the 10 runs on the cleaned dataset.}
+\label{tab:task2c}
+\end{table}
+
+The summary over the 10 runs is:
+\[
+    \text{mean accuracy} = 0.7713, \qquad
+    \text{std} = 0.0183.
+\]
+
+\paragraph{Comparison with Task 1.}
+Table~\ref{tab:task1_vs_task2} compares both tasks.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Setting} & \textbf{Rows} & \textbf{Attributes} & \textbf{Mean acc.} & \textbf{Std} \\
+\hline
+Task 1c baseline               & 1143 & 11 & 0.7576 & 0.0277 \\ \hline
+Task 2c after deletion         &  889 & 11 & 0.7713 & 0.0183 \\ \hline
+\end{tabular}
+\caption{Comparison of Task 1c (baseline) and Task 2c (after record
+deletion).}
+\label{tab:task1_vs_task2}
+\end{table}
+
+The mean accuracy increases by $+1.4$ percentage points (about
+$+1.8\%$ in relative terms). At the same time, the standard deviation
+drops from 0.0277 to 0.0183, a reduction of roughly one third: the
+model has become noticeably more \emph{stable} across runs, even
+though the mean accuracy gain is moderate.
+
+\paragraph{Interpretation.}
+The effect of record deletion is real but limited. The SVM in Task 1c
+already had access to all 11 attributes and used the redundant
+information among them. Removing the central alcohol corridor cleans
+the decision boundary along that one dimension, but the other 10
+attributes provide overlapping discriminative information, which
+partially absorbs the effect. The drop in standard deviation indicates
+that the deleted rows were also the most \emph{ambiguous} rows for the
+classifier: removing them reduces the dependence of the result on the
+random train/test split.
+
+\subsection{Conclusion}
+Symmetric corridor deletion along alcohol increases the SVM accuracy
+from $0.7576 \pm 0.0277$ to $0.7713 \pm 0.0183$. The gain in mean
+accuracy is modest ($+1.4$ p.p.), but the run-to-run stability of the
+model improves clearly. This confirms that record deletion is a
+working but moderate feature engineering technique on this dataset,
+since most discriminative information is already captured by the
+remaining attributes.

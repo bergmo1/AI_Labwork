@@ -1,1 +1,117 @@
-\section{Task 4 (by Yahia)}
+\section{Task 4: RFE feature selection (by Yahia)}
+
+\subsection{abstract}
+This section of the report presents the application of feature selection and hyperparameter optimization techniques using Support Vector Machine (SVM) classifiers on the wine dataset. We investigate Recursive Feature Elimination (RFE) and its cross-validated variant (RFECV) and evaluate model performance through grid search and accuracy metrics. All experiments were performed in Python using scikit-learn.
+
+\subsection{Overview}
+Feature selection is an essential step in machine learning modeling, allowing improved model performance and interpretability. In this lab, we utilize Wrapper methods for feature selection (RFE and RFECV) on a wine quality dataset and assess the performance of SVM classifiers with optimized hyperparameters.
+
+\subsection{Data Preprocessing}
+
+\subsubsection{Dataset}
+The dataset used is \texttt{Wine\_Test\_01.csv}, composed of 1144 samples and 12 features, with the target variable \texttt{quality}.\\
+\textbf{The dataset represents 12 quality measures for wine represented and floats and integers with the target quality being binary: 0 for bad and 1 for good}
+
+\subsubsection{Preparation}
+\begin{itemize}
+    \item The dataset is read with \texttt{pandas}.
+    \item Features and target variable (\texttt{quality}) are separated.
+    \item All data is transformed into \texttt{numpy} arrays for compatibility with scikit-learn.
+\end{itemize}
+
+\begin{lstlisting}
+dataset = pd.read_csv('Wine_Test_01.csv')
+
+features_pd = dataset.drop('quality', axis=1) 
+output_pd = dataset['quality']
+
+features = np.array(features_pd)
+quality = np.array(output_pd)
+\end{lstlisting}
+
+\subsection{Feature Selection with RFE}
+
+Recursive Feature Elimination (RFE) is performed using an SVM estimator (\texttt{SVC} with linear kernel, $C=1000$, $\gamma=0.1$). The key steps are:
+\begin{enumerate}
+    \item Data is split into 80\% training and 20\% test sets.
+    \item RFE is fit to the training set to select the top 8 features.
+    \begin{lstlisting}
+
+estimator = SVC(kernel='linear', C=1000, gamma=0.1)
+
+selector = RFE(estimator=estimator, n_features_to_select=8) 
+
+X_train, X_test, y_train, y_test = train_test_split(features, quality, test_size=0.2, random_state=42)
+
+selector.fit(X_train, y_train)
+    \end{lstlisting}
+    \newpage
+    \item The selected features are listed below:
+    \begin{itemize}
+        \item fixed acidity
+        \item volatile acidity
+        \item citric acid
+        \item chlorides
+        \item density
+        \item pH
+        \item sulphates
+        \item alcohol
+    \end{itemize}
+    \item An SVM classifier is trained on the selected features for the whole dataset, spliting it to training and test sets, achieving an accuracy of 0.751 on the test set.
+    \begin{lstlisting}
+## remove unselected features ##
+X_train_selected = selector.transform(X_train)
+X_test_selected = selector.transform(X_test)
+
+estimator.fit(X_train_selected, y_train)
+
+y_pred = estimator.predict(X_test_selected)
+
+print("Accuracy: ", np.mean(y_pred == y_test))
+    \end{lstlisting}
+\end{enumerate}
+
+\subsection{Hyperparameter Optimization with Grid Search}
+
+Next, SVM hyperparameters are optimized using \texttt{GridSearchCV}, exploring different values for $C$, $\gamma$, and kernel type just like in task 1c). The procedure:
+\begin{enumerate}
+    \item For 10 random train/test splits, grid search is performed with 10-fold cross validation.
+    \item The best hyperparameters and test accuracies for each split are recorded.
+\end{enumerate}
+
+\textbf{Results:}\\
+Average accuracy after feature selection with RFE: \textbf{0.740} $\pm$ \textbf{0.021}\\
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Iteration} & \textbf{Accuracy} & \textbf{Best Parameters} \\
+\hline
+0 & 0.786 & C=100, gamma=1, kernel=rbf \\
+\hline
+1 & 0.747 & C=100, gamma=0.01, kernel=rbf \\
+\hline
+2 & 0.712 & C=1000, gamma=0.1, kernel=rbf \\
+\hline
+3 & 0.755 & C=100, gamma=0.01, kernel=rbf \\
+\hline
+4 & 0.742 & C=1000, gamma=0.1, kernel=rbf \\
+\hline
+5 & 0.738 & C=100, gamma=0.1, kernel=rbf \\
+\hline
+6 & 0.729 & C=100, gamma=0.01, kernel=rbf \\
+\hline
+7 & 0.721 & C=1000, gamma=0.001, kernel=rbf \\
+\hline
+8 & 0.751 & C=10, gamma=1, kernel=linear \\
+\hline
+9 & 0.721 & C=1000, gamma=0.01, kernel=rbf \\
+\hline
+\end{tabular}
+\caption{Accuracy and best hyperparameters for each iteration}
+\label{tab:results}
+\end{table}
+
+\subsectionsection{Conclusion}
+
+In this task, RFE and RFECV successfully identified a subset of the most relevant features for predicting wine quality. The use of grid search further enhanced the SVM model's performance. The reported accuracies demonstrate the benefit of feature selection combined with careful hyperparameter optimization.

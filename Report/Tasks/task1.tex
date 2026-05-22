@@ -1,1 +1,150 @@
-\section{Task 1 (by Maria)}
+\section{Task 1: Classification with Unmodified Attributes (by Maria)}
+
+\subsection{Overview}
+Task 1 establishes the baseline accuracy of an SVM classifier on the wine
+quality dataset without any feature engineering. The 11 physico-chemical
+attributes are used as-is. This number serves as the reference against
+which Tasks 2, 3 and 4 are compared.
+
+\subsection{Data Preparation}
+The dataset \texttt{Wine\_Test\_01.csv} (1143 rows, 11 attributes plus a
+binary target) is loaded with \texttt{pandas}. The target \texttt{quality}
+is already binarised (0 = bad, $\text{quality} \le 5$; 1 = good,
+$\text{quality} > 5$). The class balance is 522 / 621, i.e.\ roughly
+54\% / 46\%. As pointed out in the lecture (slide 64), this near-equal
+distribution makes accuracy a meaningful evaluation metric for our
+binary classifier.
+
+\subsection{Task 1a: Histogram of Each Attribute}
+A histogram is plotted for every one of the 11 attributes to obtain a
+first impression of the value ranges and shapes. As recommended in the
+lecture (slides 7--11), this is the fundamental first step of feature
+analysis on raw data. Figure~\ref{fig:hist_all} shows the result.
+
+Several attributes (residual sugar, chlorides, total sulfur dioxide,
+sulphates) are strongly right-skewed with long tails. Others (volatile
+acidity, density, pH) are approximately symmetric. The value ranges
+differ by several orders of magnitude (e.g.\ density around
+$\sim$0.995, total sulfur dioxide up to 280), which already indicates
+that scaling will be necessary for an SVM (lecture slide 68).
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/task1_hist_all.png}
+    \caption{Task 1a: Histogram of each of the 11 attributes.}
+    \label{fig:hist_all}
+\end{figure}
+
+\subsection{Task 1b: Histograms Separated by Y}
+For every attribute, two histograms are plotted on the same axes, one
+for $Y = 0$ (bad wines) and one for $Y = 1$ (good wines). The purpose is
+to identify which attributes \emph{discriminate} between the two
+classes. Following the rule described in slides 7--11 of the lecture:
+an attribute is useful for classification when the two class histograms
+show a clear separation; an attribute with strong overlap carries
+little discriminative information. Figure~\ref{fig:hist_by_y} shows the
+result.
+
+\paragraph{Observations.}
+\begin{itemize}
+    \item \textbf{Alcohol} shows the clearest separation: bad wines are
+    concentrated around 9--10\% alcohol, good wines extend up to
+    12--13\%.
+    \item \textbf{Volatile acidity} shows a clear shift as well: the
+    bad-wine distribution is centred at higher values ($\sim$0.6),
+    the good-wine distribution at lower values ($\sim$0.4).
+    \item \textbf{Citric acid} and \textbf{sulphates} show a weaker but
+    visible separation.
+    \item The remaining seven attributes (fixed acidity, residual
+    sugar, chlorides, free sulfur dioxide, total sulfur dioxide,
+    density, pH) show nearly complete overlap of the two class
+    histograms.
+\end{itemize}
+
+\paragraph{Expected classifier performance.}
+This matches exactly the observation made in the lecture for the same
+dataset (slide 66): the curves for $Y = 0$ and $Y = 1$ overlap
+strongly for all attributes \emph{except volatile acidity and alcohol},
+which makes the dataset a difficult one for classification. We
+therefore expect a moderate accuracy in the range of 0.75--0.80, not
+substantially higher.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/task1_hist_by_y.png}
+    \caption{Task 1b: Histograms per attribute, separated by Y. Blue:
+    $Y = 0$ (bad); orange: $Y = 1$ (good).}
+    \label{fig:hist_by_y}
+\end{figure}
+
+\subsection{Task 1c: Ten Runs of Modelling and Testing}
+
+\paragraph{Pipeline.}
+The classifier is implemented as a scikit-learn \texttt{Pipeline} chaining
+\texttt{StandardScaler} and \texttt{SVC}. Scaling is required because
+SVMs are distance-based (lecture slide 68): without scaling, attributes
+with large numeric ranges (e.g.\ total sulfur dioxide) would dominate
+over attributes with small ranges (e.g.\ density). Wrapping the scaler
+into the \texttt{Pipeline} ensures that it is refit inside every
+cross-validation fold, which prevents test-set information from leaking
+into training.
+
+\paragraph{Procedure.}
+The dataset is split 80\% / 20\% into training and test sets (stratified
+on $Y$ to keep the class balance). On the training set, a
+\texttt{GridSearchCV} with 5-fold cross-validation (lecture slide 35)
+searches over the hyperparameter grid
+\[
+    \texttt{kernel} \in \{\text{linear}, \text{rbf}\}, \quad
+    \texttt{C} \in \{0.1, 1, 10, 100, 1000\}, \quad
+    \texttt{gamma} \in \{1, 0.1, 0.01, 0.001, 0.0001\},
+\]
+yielding 50 candidate configurations per run. The best estimator is
+then evaluated on the held-out test set. This whole procedure is
+repeated 10 times with different \texttt{random\_state} values, so each
+run uses a different train/test split.
+
+\paragraph{Results.}
+Table~\ref{tab:task1c} lists the test accuracy and best hyperparameters
+of each run.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Run} & \textbf{Accuracy} & \textbf{Kernel} & \textbf{C} & \textbf{gamma} \\
+\hline
+ 1 & 0.7860 & rbf    & 100   & 0.01  \\ \hline
+ 2 & 0.7991 & rbf    & 1     & 0.1   \\ \hline
+ 3 & 0.7642 & rbf    & 10    & 0.01  \\ \hline
+ 4 & 0.7424 & rbf    & 1000  & 0.01  \\ \hline
+ 5 & 0.7642 & rbf    & 1     & 0.1   \\ \hline
+ 6 & 0.7074 & rbf    & 1000  & 0.001 \\ \hline
+ 7 & 0.7817 & linear & 1000  & 1     \\ \hline
+ 8 & 0.7424 & rbf    & 1000  & 0.01  \\ \hline
+ 9 & 0.7686 & rbf    & 1     & 0.1   \\ \hline
+10 & 0.7205 & rbf    & 10    & 0.01  \\ \hline
+\end{tabular}
+\caption{Task 1c: Test accuracy and best hyperparameters for each of the
+10 runs.}
+\label{tab:task1c}
+\end{table}
+
+The summary over the 10 runs is:
+\[
+    \text{mean accuracy} = 0.7576, \qquad
+    \text{std} = 0.0277.
+\]
+The \texttt{rbf} kernel was selected in 9 out of 10 runs, with most
+runs converging to small values of \texttt{gamma} (0.01--0.1). The
+chosen \texttt{C} varies more, indicating that the regularisation
+strength is not strongly constrained by the data.
+
+\subsection{Conclusion}
+The unmodified dataset achieves an accuracy of
+$0.7576 \pm 0.0277$ with an SVM classifier and properly tuned
+hyperparameters. This value confirms the lecture's prediction (slide
+66) that the dataset is difficult, because only two of the eleven
+attributes (volatile acidity and alcohol) provide a clear class
+separation. The baseline established here serves as the reference for
+Tasks 2--4, which apply different feature engineering techniques.
