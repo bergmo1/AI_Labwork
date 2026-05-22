@@ -45,7 +45,6 @@ X_train, X_test, y_train, y_test = train_test_split(features, quality, test_size
 
 selector.fit(X_train, y_train)
     \end{lstlisting}
-    \newpage
     \item The selected features are listed below:
     \begin{itemize}
         \item fixed acidity
@@ -78,7 +77,6 @@ Next, SVM hyperparameters are optimized using \texttt{GridSearchCV}, exploring d
     \item For 10 random train/test splits, grid search is performed with 10-fold cross validation.
     \item The best hyperparameters and test accuracies for each split are recorded.
 \end{enumerate}
-
 \textbf{Results:}\\
 Average accuracy after feature selection with RFE: \textbf{0.740} $\pm$ \textbf{0.021}\\
 \begin{table}[h]
